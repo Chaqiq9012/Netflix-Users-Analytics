@@ -51,10 +51,8 @@ Based on the data, I recommend the following actionable steps for the business/m
 
 ## 📂 Project Structure
 * `data/`: Contains the raw and cleaned `netflix_users.csv` files.
-* `sql_queries/`: Includes the SQL scripts used for exploratory data analysis and segmentation.
 * `powerbi_dashboard/`: Contains the `.pbix` file with the interactive visualizations.
 
 ## 🚀 How to View the Dashboard
 1. Download the `.pbix` file from the `powerbi_dashboard` folder.
 2. Open it using Microsoft Power BI Desktop.
-3. Use the interactive slicers on the left panel to filter by Country, Subscription Type, and Age Group.
