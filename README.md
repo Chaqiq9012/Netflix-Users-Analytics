@@ -50,8 +50,8 @@ Based on the data, I recommend the following actionable steps for the business/m
 ---
 
 ## 📂 Project Structure
-* `data/`: Contains the raw and cleaned `netflix_users.csv` files.
-* `powerbi_dashboard/`: Contains the `.pbix` file with the interactive visualizations.
+* `netflix_users.csv/`: Contains the raw and cleaned `netflix.csv` files.
+* `Netflix_users_Dashboard.pbix/`: Contains the `.pbix` file with the interactive visualizations.
 
 ## 🚀 How to View the Dashboard
 1. Download the `.pbix` file from the `powerbi_dashboard` folder.
