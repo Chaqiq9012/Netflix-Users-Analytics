@@ -36,7 +36,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
   function Button({ variant = 'dark', size = 'md', icon: Icon, block, loading, className, children, disabled, ...rest }, ref) {
     const sz = size === 'sm' ? 'h-9 px-3.5 text-[13px] rounded-xl' : size === 'lg' ? 'h-14 px-6 text-[16px] rounded-2xl' : 'h-12 px-5 text-[15px] rounded-2xl';
     return (
-      <button ref={ref} disabled={disabled || loading} className={cx('inline-flex items-center justify-center gap-2 font-bold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none select-none', sz, VARIANTS[variant], block && 'w-full', className)} {...rest}>
+      <button ref={ref} disabled={disabled || loading} className={cx('inline-flex items-center justify-center gap-2 font-bold whitespace-nowrap transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none select-none', sz, VARIANTS[variant], block && 'w-full', className)} {...rest}>
         {loading ? <span className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" /> : Icon && <Icon size={size === 'sm' ? 16 : 18} strokeWidth={2.4} />}
         {children}
       </button>

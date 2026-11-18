@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../data/db';
+import { db, isDemoMode } from '../data/db';
 import { closeCompletedMonths, ensureSeed, recordDailySnapshot } from '../data/repo';
 import { computeSnapshot, todayIn, hourIn, type FinanceData, type Snapshot, type Category, type Account } from '../engine';
 
@@ -47,7 +47,14 @@ export function FinanceProvider({ children, fallback }: { children: ReactNode; f
   const [seeded, setSeeded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    ensureSeed().then(() => setSeeded(true)).catch((e) => setError(String(e?.message ?? e)));
+    ensureSeed()
+      .then(async () => {
+        if (isDemoMode() && (await db.transactions.count()) === 0) {
+          const { seedDemoData } = await import('../data/demo');
+          await seedDemoData();
+        }
+      })
+      .then(() => setSeeded(true)).catch((e) => setError(String(e?.message ?? e)));
   }, []);
   const data = useLiveQuery(() => (seeded ? loadAll() : Promise.resolve(null)), [seeded]);
   const { today, hour } = useClock(data?.settings.timezone ?? 'Africa/Casablanca');

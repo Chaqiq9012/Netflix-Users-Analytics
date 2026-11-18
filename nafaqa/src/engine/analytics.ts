@@ -5,6 +5,9 @@ import { RestCalendar, targetsOn, weeklyHistory } from './savings';
 import { occurrencesInMonth } from './subscriptions';
 import type { FinanceData } from './types';
 
+/** Averages are shown rounded to whole dirhams. */
+const wholeAvg = (c: number) => Math.round(c / 100) * 100;
+
 export interface DayTotal { date: ISODate; income: Cents; expense: Cents; savings: Cents }
 export interface CategoryTotal { categoryId: string; total: Cents; count: number; share: number }
 
@@ -87,21 +90,21 @@ export function analyze(data: FinanceData, today: ISODate, from: ISODate, to: IS
     from: start, to: end, days, hasData: !!first && start <= end,
     income: {
       total: incomeTotal,
-      avgDaily: Math.round(incomeTotal / days),
-      avgWeekly: Math.round((incomeTotal / days) * 7),
-      avgPerWorkingDay: Math.round(incomeTotal / working),
+      avgDaily: wholeAvg(incomeTotal / days),
+      avgWeekly: wholeAvg((incomeTotal / days) * 7),
+      avgPerWorkingDay: wholeAvg(incomeTotal / working),
       highest, lowest, earningDays: earning.length,
       byCategory: byCategory(data, 'income', start, end)
     },
     expense: {
       total: expenseTotal,
-      avgDaily: Math.round(expenseTotal / days),
+      avgDaily: wholeAvg(expenseTotal / days),
       byCategory: byCategory(data, 'expense', start, end),
       largest: data.transactions.filter((t) => t.kind === 'expense' && t.date >= start && t.date <= end).sort((a, b) => b.amount - a.amount).slice(0, 5)
     },
     savings: {
       net,
-      avgPerWorkingDay: Math.round(net / working),
+      avgPerWorkingDay: wholeAvg(net / working),
       weeklyCompletionRate: hist.length ? hist.filter((w) => w.achieved).length / hist.length : null,
       completedWeeks: hist.length,
       monthlyCompletionRate: months.length ? months.filter((m) => m.achieved).length / months.length : null,
@@ -143,6 +146,8 @@ export interface Forecast {
 }
 
 const MIN_HISTORY_DAYS = 14;
+/** Estimates are shown in whole dirhams. */
+const wholeDH = (c: number) => Math.round(c / 100) * 100;
 
 /** Estimates based on the last 28 days. Returns available=false when history is insufficient. */
 export function forecast(data: FinanceData, today: ISODate, safeToSpendNow: Cents): Forecast {
@@ -171,10 +176,10 @@ export function forecast(data: FinanceData, today: ISODate, safeToSpendNow: Cent
   const expPerDay = expensesBetween(data.transactions, winStart, winEnd) / winDays;
   const savPerWork = Math.max(0, savingsBetween(data.transfers, winStart, winEnd)) / winWorking;
   const remainingDays = diffDays(mEnd, today);
-  const projectedIncome = Math.round(incPerWork * remainingWorkingDays);
-  const projectedExpenses = Math.round(expPerDay * remainingDays);
+  const projectedIncome = wholeDH(incPerWork * remainingWorkingDays);
+  const projectedExpenses = wholeDH(expPerDay * remainingDays);
   const remainingGoal = Math.max(0, monthGoal - monthSaved);
-  const projSavings = Math.min(Math.round(savPerWork * remainingWorkingDays), Math.max(0, remainingGoal));
+  const projSavings = Math.min(wholeDH(savPerWork * remainingWorkingDays), Math.max(0, remainingGoal));
   const monthEndSavings = monthSaved + projSavings;
   const expectedSafeToSpend = Math.max(0, safeToSpendNow + projectedIncome - projectedExpenses - projSavings);
   return {
