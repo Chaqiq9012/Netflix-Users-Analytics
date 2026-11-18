@@ -1,0 +1,33 @@
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+html, body { background: #FBF5E9; color: #17251D; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif; overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
+#root { min-height: 100dvh; }
+
+@layer utilities {
+  .tnum { font-variant-numeric: tabular-nums; }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+}
+
+@layer components {
+  .card { @apply bg-card border border-line rounded-3xl shadow-soft; }
+  .label { @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted; }
+  .input { @apply w-full h-12 px-4 rounded-2xl bg-white border border-line text-ink text-[15px] outline-none transition focus:border-forest focus:ring-4 focus:ring-forest/10 placeholder:text-muted/60; }
+  .chip { @apply inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-semibold transition whitespace-nowrap; }
+}
+
+input[type='date'] { -webkit-appearance: none; appearance: none; }
+input[type='date']::-webkit-date-and-time-value { text-align: left; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
