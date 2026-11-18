@@ -1,6 +1,7 @@
 import {
-  addDays, eachDay, endOfMonth, endOfWeek, minDate, monthKey, startOfMonth, startOfWeek, weekday, type ISODate
+  addDays, eachDay, endOfWeek, minDate, startOfWeek, weekday, type ISODate
 } from './dates';
+import { periodKeyOf, periodRange, startDayOf } from './period';
 import { savingsBetween, savingsDelta } from './ledger';
 import { ceilDirham, type Cents } from './money';
 import type { GoalTarget, RestDay, Settings, Transfer, WeeklyRecord } from './types';
@@ -70,7 +71,7 @@ export interface SavingsInput {
   transfers: Transfer[];
   goals: GoalTarget[];
   restDays: RestDay[];
-  settings: Pick<Settings, 'recurringRestWeekdays'>;
+  settings: Pick<Settings, 'recurringRestWeekdays' | 'monthStartDay'>;
 }
 
 /**
@@ -93,9 +94,9 @@ export function weekProgress(input: SavingsInput, today: ISODate, weekOf: ISODat
   const savedToday = inWeek ? savingsBetween(input.transfers, today, today) : 0;
   const savedBeforeToday = inWeek ? savingsBetween(input.transfers, weekStart, addDays(today, -1)) : saved;
 
-  // Monthly cap (month of the evaluation date).
-  const mStart = startOfMonth(evalDate);
-  const mEnd = endOfMonth(evalDate);
+  // Monthly cap (financial month of the evaluation date).
+  const sd = startDayOf(input.settings);
+  const { start: mStart, end: mEnd } = periodRange(periodKeyOf(evalDate, sd), sd);
   const monthGoal = targetsOn(input.goals, minDate(today, mEnd)).monthly;
   const monthSaved = savingsBetween(input.transfers, mStart, mEnd);
   const monthSavedBefore = inWeek ? savingsBetween(input.transfers, mStart, addDays(today, -1)) : monthSaved;
@@ -144,6 +145,8 @@ export function weekProgress(input: SavingsInput, today: ISODate, weekOf: ISODat
 
 export interface MonthProgress {
   month: string;
+  start: ISODate;
+  end: ISODate;
   goal: Cents;
   saved: Cents;
   remaining: Cents;
@@ -156,10 +159,11 @@ export interface MonthProgress {
   estimateReason: string;
 }
 
-export function monthProgress(input: SavingsInput, today: ISODate, month: string = monthKey(today)): MonthProgress {
+export function monthProgress(input: SavingsInput, today: ISODate, month?: string): MonthProgress {
   const cal = new RestCalendar(input.restDays, input.settings.recurringRestWeekdays);
-  const mStart = `${month}-01`;
-  const mEnd = endOfMonth(mStart);
+  const sd = startDayOf(input.settings);
+  if (!month) month = periodKeyOf(today, sd);
+  const { start: mStart, end: mEnd } = periodRange(month, sd);
   const goal = targetsOn(input.goals, minDate(today, mEnd)).monthly;
   const saved = savingsBetween(input.transfers, mStart, mEnd);
   const remaining = Math.max(0, goal - saved);
@@ -207,7 +211,7 @@ export function monthProgress(input: SavingsInput, today: ISODate, month: string
     }
   }
 
-  return { month, goal, saved, remaining, progress: goal > 0 ? Math.min(1, Math.max(0, saved) / goal) : 1, achieved: goal > 0 && saved >= goal, achievedOn, weeks, estimatedCompletion, estimateReason };
+  return { month, start: mStart, end: mEnd, goal, saved, remaining, progress: goal > 0 ? Math.min(1, Math.max(0, saved) / goal) : 1, achieved: goal > 0 && saved >= goal, achievedOn, weeks, estimatedCompletion, estimateReason };
 }
 
 export interface WeekHistoryRow {

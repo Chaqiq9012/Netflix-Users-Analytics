@@ -1,4 +1,5 @@
-import { addDays, diffDays, endOfMonth, monthKey, startOfWeek, type ISODate } from './dates';
+import { addDays, addMonths, diffDays, minDate, startOfWeek, type ISODate } from './dates';
+import { periodKeyOf, periodRange, startDayOf } from './period';
 import { expensesBetween, incomeBetween, savingsBetween, savingsDelta, type Allocation } from './ledger';
 import { formatMoney, type Cents } from './money';
 import { RestCalendar, weeklyHistory, type WeekProgress, type MonthProgress } from './savings';
@@ -133,10 +134,13 @@ export function insights(data: FinanceData, today: ISODate, alloc: Allocation, w
   }
 
   // Category spending changes month over month (same number of days).
-  const mStart = monthKey(today) + '-01';
+  const sd = startDayOf(data.settings);
+  const curKey = periodKeyOf(today, sd);
+  const mStart = periodRange(curKey, sd).start;
   const dayN = diffDays(today, mStart);
-  const prevStart = addDays(mStart, -1).slice(0, 7) + '-01';
-  const prevEnd = addDays(prevStart, Math.min(dayN, diffDays(endOfMonth(prevStart), prevStart)));
+  const prev = periodRange(addMonths(curKey, -1), sd);
+  const prevStart = prev.start;
+  const prevEnd = minDate(addDays(prevStart, dayN), prev.end);
   if (first <= prevStart) {
     const cur = byCategory(data, 'expense', mStart, today);
     const prev = new Map(byCategory(data, 'expense', prevStart, prevEnd).map((c) => [c.categoryId, c.total]));

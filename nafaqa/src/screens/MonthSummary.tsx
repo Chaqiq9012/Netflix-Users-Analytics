@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { addMonths, endOfMonth, expensesBetween, incomeBetween, monthKey, monthName, monthProgress, monthSummaries, byCategory, formatDate, isValidDate } from '../engine';
+import { addMonths, expensesBetween, incomeBetween, monthProgress, monthSummaries, byCategory, formatDate, isValidDate, periodKeyOf, periodLabel, periodRange, periodShort, startDayOf, minDate } from '../engine';
 import { useFinance } from '../hooks/useFinance';
 import { Card, CategoryIcon, Money, PageHeader, ProgressBar, SectionTitle, cx } from '../ui/kit';
 import { BarChart, BreakdownList, LineChart } from '../ui/charts';
@@ -10,17 +10,20 @@ export default function MonthSummary() {
   const { month: param } = useParams();
   const { data, today, cat } = useFinance();
   const nav = useNavigate();
-  const month = param && isValidDate(param + '-01') ? param : monthKey(today);
-  const s = month + '-01', e = endOfMonth(s);
+  const sd = startDayOf(data.settings);
+  const current = periodKeyOf(today, sd);
+  const month = param && isValidDate(param + '-01') && param <= current ? param : current;
+  const { start: s, end: e } = periodRange(month, sd);
   const income = incomeBetween(data.transactions, s, e);
   const expenses = expensesBetween(data.transactions, s, e);
   const mp = monthProgress(data, today, month);
   const net = income - expenses;
   const unsaved = net - mp.saved;
   const prev = addMonths(month, -1);
-  const pIncome = incomeBetween(data.transactions, prev + '-01', endOfMonth(prev + '-01'));
-  const pExp = expensesBetween(data.transactions, prev + '-01', endOfMonth(prev + '-01'));
-  const comps = monthSummaries(data, endOfMonth(s) < today ? endOfMonth(s) : today, 6);
+  const pr = periodRange(prev, sd);
+  const pIncome = incomeBetween(data.transactions, pr.start, pr.end);
+  const pExp = expensesBetween(data.transactions, pr.start, pr.end);
+  const comps = monthSummaries(data, minDate(e, today), 6);
   const cats = byCategory(data, 'expense', s, e);
   // cumulative savings progression
   let cum = 0;
@@ -36,10 +39,11 @@ export default function MonthSummary() {
       <PageHeader title="Monthly summary" back right={
         <div className="flex gap-1">
           <button aria-label="Previous month" onClick={() => nav(`/summary/${prev}`)} className="h-11 w-11 grid place-items-center rounded-2xl border border-line bg-card"><ChevronLeft size={20} /></button>
-          <button aria-label="Next month" disabled={month >= monthKey(today)} onClick={() => nav(`/summary/${addMonths(month, 1)}`)} className="h-11 w-11 grid place-items-center rounded-2xl border border-line bg-card disabled:opacity-30"><ChevronRight size={20} /></button>
+          <button aria-label="Next month" disabled={month >= current} onClick={() => nav(`/summary/${addMonths(month, 1)}`)} className="h-11 w-11 grid place-items-center rounded-2xl border border-line bg-card disabled:opacity-30"><ChevronRight size={20} /></button>
         </div>
       } />
-      <p className="text-[20px] font-extrabold -mt-2 mb-4">{monthName(month)}</p>
+      <p className="text-[20px] font-extrabold -mt-2">{periodLabel(month, sd)}</p>
+      <p className="text-[12px] text-muted mb-4">{sd === 1 ? 'Calendar month' : `${formatDate(s, 'long')} – ${formatDate(e, 'long')}`}</p>
       <div className="grid grid-cols-2 gap-3">
         <Tile label="Income" value={income} delta={pct(income, pIncome)} good="up" />
         <Tile label="Expenses" value={expenses} delta={pct(expenses, pExp)} good="down" />
@@ -54,7 +58,7 @@ export default function MonthSummary() {
       </Card>
       <Card className="p-5 mt-4">
         <h3 className="font-extrabold text-[15px] mb-4">Monthly comparison</h3>
-        <BarChart data={comps.map((c) => ({ key: c.month, label: monthName(c.month, false), values: [c.income, c.expenses, Math.max(0, c.savings)] }))} colors={['#68A77C', '#17251D', '#EF7000']} names={['Income', 'Expenses', 'Saved']} height={150} />
+        <BarChart data={comps.map((c) => ({ key: c.month, label: periodShort(c.month, sd), values: [c.income, c.expenses, Math.max(0, c.savings)] }))} colors={['#68A77C', '#17251D', '#EF7000']} names={['Income', 'Expenses', 'Saved']} height={150} />
       </Card>
       <section className="mt-6">
         <SectionTitle title="Where the money went" />

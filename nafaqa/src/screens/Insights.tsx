@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp, AlertTriangle, Info, CheckCircle2, ChevronRight, HeartPulse, Sparkles } from 'lucide-react';
-import { addDays, analyze, endOfMonth, financialHealth, forecast, formatDate, insights, startOfMonth, startOfWeek, monthKey, type DayTotal } from '../engine';
+import { addDays, analyze, financialHealth, forecast, formatDate, insights, startOfWeek, type DayTotal } from '../engine';
 import { useFinance } from '../hooks/useFinance';
 import { Card, CategoryIcon, Money, PageHeader, ProgressBar, SectionTitle, Segmented, cx } from '../ui/kit';
 import { BarChart, BreakdownList, LineChart, Ring } from '../ui/charts';
@@ -11,7 +11,7 @@ type Range = 'month' | '30d' | '90d' | 'all';
 export default function Insights() {
   const { data, snap, today, cat } = useFinance();
   const [range, setRange] = useState<Range>('month');
-  const [from, to] = range === 'month' ? [startOfMonth(today), endOfMonth(today)] : range === '30d' ? [addDays(today, -29), today] : range === '90d' ? [addDays(today, -89), today] : ['2000-01-01', today];
+  const [from, to] = range === 'month' ? [snap.month.start, snap.month.end] : range === '30d' ? [addDays(today, -29), today] : range === '90d' ? [addDays(today, -89), today] : ['2000-01-01', today];
   const an = useMemo(() => analyze(data, today, from, to), [data, today, from, to]);
   const fc = useMemo(() => forecast(data, today, snap.allocation.safeToSpend), [data, today, snap]);
   const health = useMemo(() => financialHealth(data, today, snap.allocation), [data, today, snap]);
@@ -90,7 +90,7 @@ export default function Insights() {
 
           {/* Expenses */}
           <section className="mt-6">
-            <SectionTitle title="Expenses" to={`/summary/${monthKey(today)}`} action="Month summary" />
+            <SectionTitle title="Expenses" to={`/summary/${snap.month.month}`} action="Month summary" />
             <Card className="p-5">
               <div className="grid grid-cols-2 gap-3">
                 <K label="Total" value={<Money value={an.expense.total} />} />

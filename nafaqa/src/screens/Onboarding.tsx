@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ShieldCheck, PiggyBank, Repeat, FlaskConical } from 'lucide-react';
-import { formatMoney, parseMoney, todayIn } from '../engine';
+import { formatMoney, parseMoney, todayIn, periodKeyOf, periodLabel } from '../engine';
 import { addTransaction, updateSettings } from '../data/repo';
 import { DEMO_FLAG } from '../data/db';
 import { useAction } from '../ui/overlay';
-import { Button, Field, Input, MoneyField } from '../ui/kit';
+import { Button, Field, Input, MoneyField, cx } from '../ui/kit';
 import { Logo } from '../App';
 
 export default function Onboarding() {
@@ -13,6 +13,7 @@ export default function Onboarding() {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
   const [reserve, setReserve] = useState('500');
+  const [startDay, setStartDay] = useState(1);
   const [busy, setBusy] = useState(false);
 
   const finish = async () => {
@@ -22,7 +23,7 @@ export default function Onboarding() {
     setBusy(true);
     await run(async () => {
       if (b > 0) await addTransaction({ kind: 'income', amount: b, description: 'Opening balance', categoryId: 'inc-other', date: todayIn('Africa/Casablanca'), isOpening: true });
-      await updateSettings({ userName: name.trim(), emergencyReserve: r, onboarded: true });
+      await updateSettings({ userName: name.trim(), emergencyReserve: r, monthStartDay: startDay, onboarded: true });
     }, 'Welcome to Nafaqa');
     setBusy(false);
   };
@@ -54,8 +55,9 @@ export default function Onboarding() {
               <Field label="What should we call you?"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={30} autoFocus /></Field>
               <Field label="How much money do you have right now?" hint="Recorded as an opening balance (not counted as income)."><MoneyField value={balance} onChange={setBalance} /></Field>
               <Field label="Emergency reserve" hint="Always protected and never counted as safe to spend."><MoneyField value={reserve} onChange={setReserve} /></Field>
+              <MonthStartPicker value={startDay} onChange={setStartDay} />
               <div className="rounded-2xl bg-card border border-line p-4 text-[13px] text-muted">
-                Default goals: <b className="text-ink">{formatMoney(15000)}</b> daily reference · <b className="text-ink">{formatMoney(100000)}</b> weekly · <b className="text-ink">{formatMoney(400000)}</b> monthly. Weeks run Monday to Sunday, Africa/Casablanca time.
+                Default goals: <b className="text-ink">{formatMoney(15000)}</b> daily reference · <b className="text-ink">{formatMoney(100000)}</b> weekly · <b className="text-ink">{formatMoney(400000)}</b> per month. Weeks run Monday to Sunday, Africa/Casablanca time.
               </div>
             </div>
           </>
@@ -74,6 +76,38 @@ export default function Onboarding() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+const PRESETS = [1, 5, 10, 15, 20, 25];
+
+/** "When does your month start?" — e.g. payday or rent day. Shared with Settings. */
+export function MonthStartPicker({ value, onChange }: { value: number; onChange: (d: number) => void }) {
+  const today = todayIn('Africa/Casablanca');
+  const custom = !PRESETS.includes(value);
+  return (
+    <div>
+      <span className="block text-[13px] font-semibold text-ink mb-1.5">When does your month start?</span>
+      <div className="grid grid-cols-6 gap-1.5">
+        {PRESETS.map((d) => (
+          <button key={d} type="button" onClick={() => onChange(d)} aria-pressed={value === d}
+            className={cx('h-11 rounded-xl text-[13px] font-bold border transition', value === d ? 'bg-forest text-cream border-forest' : 'bg-card border-line')}>
+            {d === 1 ? '1st' : d + 'th'}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 mt-2">
+        <span className="text-[13px] text-muted">Other day:</span>
+        <select aria-label="Month start day" value={value} onChange={(e) => onChange(Number(e.target.value))}
+          className={cx('input !h-10 !w-24 !px-3', custom && '!border-forest')}>
+          {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+      <span className="block text-[12px] text-muted mt-1.5">
+        Your monthly savings goal and reports run from this day — e.g. your payday. Current month: <b className="text-ink">{periodLabel(periodKeyOf(today, value), value)}</b>
+        {value > 28 && '. In shorter months it starts on the last day.'}
+      </span>
     </div>
   );
 }

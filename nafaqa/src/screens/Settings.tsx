@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Download, Upload, FileSpreadsheet, Trash2, Plus, Eye, EyeOff, FlaskConical, Archive, RotateCcw, Pencil, History, Lock } from 'lucide-react';
-import { actualBalance, centsToInput, parseMoney, targetsOn, weekdayShort, type Category, type Account } from '../engine';
+import { actualBalance, centsToInput, parseMoney, targetsOn, weekdayShort, startDayOf, type Category, type Account } from '../engine';
+import { MonthStartPicker } from './Onboarding';
 import { useFinance } from '../hooks/useFinance';
 import { db, DEMO_FLAG, isDemoMode } from '../data/db';
 import {
@@ -99,6 +100,13 @@ export default function Settings() {
         <Line label="Currency" value="Moroccan dirham (MAD · DH)" />
         <Line label="Timezone" value="Africa/Casablanca" />
         <Line label="Week starts" value="Monday" />
+        <div className="p-4">
+          <MonthStartPicker value={startDayOf(s)} onChange={async (d) => {
+            if (d === startDayOf(s)) return;
+            if (await confirm({ title: `Start your month on day ${d}?`, text: 'Monthly goals, summaries and insights will be regrouped around the new start day — including past months. Transactions and balances do not change.', confirm: 'Change' }))
+              run(() => updateSettings({ monthStartDay: d }), 'Month start updated');
+          }} />
+        </div>
       </Group>
 
       <Group title="Rest days" note="Weekdays you usually don't work. You can still override any single date from Goals or Calendar.">

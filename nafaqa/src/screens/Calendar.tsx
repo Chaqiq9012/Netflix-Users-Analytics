@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Moon, Sun, Star, Repeat } from 'lucide-react';
 import {
   addDays, addMonths, daysInMonth, formatDate, monthKey, monthName, monthProgress, occurrencesInMonth, RestCalendar, savingsDelta,
-  startOfWeek, weekday, weekdayShort, targetsOn, minDate, endOfWeek
+  startOfWeek, weekday, weekdayShort, targetsOn, minDate, endOfWeek, periodKeyOf, periodRange, startDayOf
 } from '../engine';
 import { useFinance } from '../hooks/useFinance';
 import { setRestDay } from '../data/repo';
@@ -37,8 +37,16 @@ export default function Calendar() {
       let c = 0;
       for (const t of rel) { c += savingsDelta(t); if (goal > 0 && c >= goal) { if (t.periodDate.startsWith(month)) add(t.periodDate, 'Weekly goal reached'); break; } }
     }
-    const mp = monthProgress(data, today, month);
-    if (mp.achievedOn) add(mp.achievedOn, 'Monthly goal reached');
+    // Financial months overlapping this calendar month (two when the month starts mid-month).
+    const sd = startDayOf(data.settings);
+    const last = addDays(first, daysInMonth(month) - 1);
+    const keys = [periodKeyOf(first, sd), periodKeyOf(last, sd)].filter((k, i, a) => a.indexOf(k) === i);
+    for (const k of keys) {
+      const mp = monthProgress(data, today, k);
+      if (mp.achievedOn?.startsWith(month)) add(mp.achievedOn, 'Monthly goal reached');
+      const st = periodRange(k, sd).start;
+      if (sd !== 1 && st.startsWith(month)) add(st, 'Your financial month starts');
+    }
     return { byDay, bills, milestones };
   }, [data, month, today]);
 
