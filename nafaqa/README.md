@@ -42,3 +42,17 @@ Accounts, transactions, transfers, allocation pockets, savings contributions (th
 ### Privacy & data
 All data lives in this browser's IndexedDB. Settings provide JSON backup/restore, CSV export, "hide amounts", and full erase.
 **Demo mode** uses a separate database (`nafaqa-demo`) and a persistent banner — real data is never touched.
+
+## Optional: encrypted cloud backup (Supabase)
+
+1. Create a free Supabase project.
+2. In **SQL editor**, run the setup SQL shown in *Settings → Cloud backup & sync* (also in `src/data/cloud.ts`, `SETUP_SQL`). It creates one table protected by row-level security so each user can only read their own row.
+3. In the app, paste the project URL and public **anon** key, then create an account or sign in.
+
+Your backup is encrypted **on the device** (AES-256-GCM, key derived from your password with PBKDF2-SHA256, 210k iterations) before upload, so Supabase only stores ciphertext. The password is held in memory only; after a reload you unlock with it again. Forgetting it means the cloud copy can't be decrypted — local data is unaffected. Automatic backup uploads ~15 s after changes while online.
+
+## Install on your phone (GitHub Pages)
+
+`.github/workflows/nafaqa.yml` runs the tests and build on every PR and deploys to GitHub Pages on pushes to `main`.
+One-time setup: repository **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Then open the Pages URL on your iPhone in Safari → Share → **Add to Home Screen**.

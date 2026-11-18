@@ -9,6 +9,7 @@ import {
 } from '../data/repo';
 import { downloadText } from '../lib/download';
 import { CATEGORY_ICONS, iconFor } from '../lib/icons';
+import { CloudBackupSection } from '../features/CloudBackup';
 import { Sheet, useAction, useConfirm, useToast } from '../ui/overlay';
 import { Button, Card, Field, Input, Money, MoneyField, PageHeader, Segmented, Toggle, cx, CategoryIcon } from '../ui/kit';
 
@@ -121,7 +122,7 @@ export default function Settings() {
 
       <Group title="Privacy">
         <ToggleLine label="Hide amounts" sub="Mask balances on screen (e.g. in public)" checked={s.hideAmounts} onChange={(v) => run(() => updateSettings({ hideAmounts: v }))} icon={s.hideAmounts ? EyeOff : Eye} />
-        <div className="px-4 py-3.5 flex gap-3 items-start text-[13px] text-muted"><Lock size={16} className="shrink-0 mt-0.5" /> Your data is stored only on this device (IndexedDB). Nothing is sent to any server.</div>
+        <div className="px-4 py-3.5 flex gap-3 items-start text-[13px] text-muted"><Lock size={16} className="shrink-0 mt-0.5" /> Your data is stored on this device (IndexedDB). Nothing leaves it unless you turn on encrypted cloud backup below.</div>
       </Group>
 
       <Group title="Backup & export">
@@ -130,6 +131,8 @@ export default function Settings() {
         <ActionLine icon={FileSpreadsheet} label="Export transactions (CSV)" onClick={doCSV} />
         <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.target.value = ''; }} />
       </Group>
+
+      <CloudBackupSection />
 
       <AuditLog />
 

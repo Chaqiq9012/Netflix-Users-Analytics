@@ -4,6 +4,7 @@ import { Home as HomeIcon, ListOrdered, Repeat, Target, BarChart3, CalendarDays,
 import { FinanceProvider, useFinance } from './hooks/useFinance';
 import { ToastProvider, ConfirmProvider } from './ui/overlay';
 import { ActionsProvider } from './features/actions';
+import { CloudAutoSync } from './features/CloudBackup';
 import { cx } from './ui/kit';
 import { isDemoMode, DEMO_FLAG } from './data/db';
 import Home from './screens/Home';
@@ -119,6 +120,7 @@ function Gate() {
   if (!data.settings.onboarded) return <Onboarding />;
   return (
     <ActionsProvider>
+      <CloudAutoSync />
       <Shell>
         <Suspense fallback={<div className="py-20 grid place-items-center"><span className="h-5 w-5 rounded-full border-2 border-forest border-t-transparent animate-spin" /></div>}>
           <Routes>
