@@ -4,7 +4,7 @@ import {
   computeSnapshot, formatMoney, isValidDate, pocketLedger, recoveryFor, todayIn, DEFAULT_TARGETS, endOfWeek, minDate,
   RestCalendar, dueDateFor, monthKey, type Category, type Cents, type FinanceData, type GoalTarget, type ISODate, type PocketId,
   type Settings, type Subscription, type Transaction, type TransferSource, type TxKind, type Account, type RestDay,
-  type DailySnapshot, type MonthlyRecord, monthProgress, incomeBetween, expensesBetween, endOfMonth, addMonths
+  type DailySnapshot, type MonthlyRecord, monthProgress, incomeBetween, expensesBetween, addMonths, periodKeyOf, periodRange, startDayOf, normalizeStartDay
 } from '../engine';
 
 export class ValidationError extends Error {}
@@ -315,8 +315,11 @@ export async function undoPayment(paymentId: string): Promise<void> {
 // ───────────────────────── Settings & goals ─────────────────────────
 
 export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Promise<void> {
-  await db.transaction('rw', db.settings, db.auditLogs, async () => {
+  await db.transaction('rw', db.settings, db.monthlyRecords, db.auditLogs, async () => {
     const before = (await db.settings.get('main')) ?? DEFAULT_SETTINGS;
+    // Month boundaries changed: stored month records are rebuilt from transactions on next load.
+    if (patch.monthStartDay !== undefined && patch.monthStartDay !== startDayOf(before)) await db.monthlyRecords.clear();
+    if (patch.monthStartDay !== undefined && normalizeStartDay(patch.monthStartDay) !== patch.monthStartDay) throw new ValidationError('Month start day must be between 1 and 31.');
     if (patch.emergencyReserve !== undefined && (!Number.isSafeInteger(patch.emergencyReserve) || patch.emergencyReserve < 0)) throw new ValidationError('Emergency reserve cannot be negative.');
     const after = { ...before, ...patch, id: 'main' as const };
     await db.settings.put(after);
@@ -384,10 +387,11 @@ export async function closeCompletedMonths(data: FinanceData, today: ISODate, fi
   if (!firstActivity) return;
   const have = new Set(data.monthlyRecords.map((m) => m.month));
   const rows: MonthlyRecord[] = [];
-  for (let m = monthKey(firstActivity); m < monthKey(today); m = addMonths(m, 1)) {
+  const sd = startDayOf(data.settings);
+  for (let m = periodKeyOf(firstActivity, sd); m < periodKeyOf(today, sd); m = addMonths(m, 1)) {
     if (have.has(m)) continue;
     const mp = monthProgress(data, today, m);
-    const s = m + '-01', e = endOfMonth(s);
+    const { start: s, end: e } = periodRange(m, sd);
     rows.push({ month: m, goal: mp.goal, saved: mp.saved, achieved: mp.achieved, income: incomeBetween(data.transactions, s, e), expenses: expensesBetween(data.transactions, s, e), closedAt: now() });
   }
   if (rows.length) await db.monthlyRecords.bulkPut(rows);

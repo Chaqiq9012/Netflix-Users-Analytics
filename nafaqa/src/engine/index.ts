@@ -1,5 +1,6 @@
 export * from './money';
 export * from './dates';
+export * from './period';
 export * from './types';
 export * from './ledger';
 export * from './savings';

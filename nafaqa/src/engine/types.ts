@@ -156,6 +156,8 @@ export interface Settings {
   emergencyReserve: Cents;
   /** Weekdays (0=Mon..6=Sun) treated as rest days unless overridden on a date. */
   recurringRestWeekdays: number[];
+  /** Day of month (1–31) the financial month starts on; 1 = calendar months. */
+  monthStartDay?: number;
   notifications: { bills: boolean; dailyTarget: boolean; weeklyRecovery: boolean; browser: boolean };
   hideAmounts: boolean;
   promptSaveOnIncome: boolean;

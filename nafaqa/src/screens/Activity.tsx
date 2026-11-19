@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, SlidersHorizontal, ListX, X } from 'lucide-react';
-import { addDays, endOfMonth, relativeDay, startOfMonth, startOfWeek, formatDate, monthName, type Transaction } from '../engine';
+import { addDays, relativeDay, startOfWeek, formatDate, periodKeyOf, periodLabel, periodRange, startDayOf, type Transaction } from '../engine';
 import { useFinance } from '../hooks/useFinance';
 import { TxRow } from '../features/TxRow';
 import { Button, Card, EmptyState, Input, Money, PageHeader, Segmented, cx } from '../ui/kit';
@@ -12,10 +12,12 @@ type Group = 'day' | 'week' | 'month';
 
 export default function Activity() {
   const { data, today } = useFinance();
+  const sd = startDayOf(data.settings);
+  const thisPeriod = periodRange(periodKeyOf(today, sd), sd);
   const nav = useNavigate();
   const [kind, setKind] = useState<Kind>('all');
   const [range, setRange] = useState<Range>('all');
-  const [from, setFrom] = useState(startOfMonth(today));
+  const [from, setFrom] = useState(thisPeriod.start);
   const [to, setTo] = useState(today);
   const [q, setQ] = useState('');
   const [catIds, setCatIds] = useState<string[]>([]);
@@ -25,12 +27,12 @@ export default function Activity() {
   const [rFrom, rTo] = useMemo(() => {
     switch (range) {
       case 'week': return [startOfWeek(today), addDays(startOfWeek(today), 6)];
-      case 'month': return [startOfMonth(today), endOfMonth(today)];
+      case 'month': return [thisPeriod.start, thisPeriod.end];
       case '30d': return [addDays(today, -29), today];
       case 'custom': return [from <= to ? from : to, from <= to ? to : from];
       default: return ['0000-01-01', '9999-12-31'];
     }
-  }, [range, from, to, today]);
+  }, [range, from, to, today, thisPeriod.start, thisPeriod.end]);
 
   const cats = new Map(data.categories.map((c) => [c.id, c]));
   const list = useMemo(() => {
@@ -50,15 +52,15 @@ export default function Activity() {
   const groups = useMemo(() => {
     const m = new Map<string, { title: string; items: Transaction[]; inc: number; exp: number }>();
     for (const t of list) {
-      const key = group === 'day' ? t.date : group === 'week' ? startOfWeek(t.date) : t.date.slice(0, 7);
-      const title = group === 'day' ? relativeDay(t.date, today) : group === 'week' ? `Week of ${formatDate(key)}` : monthName(key);
+      const key = group === 'day' ? t.date : group === 'week' ? startOfWeek(t.date) : periodKeyOf(t.date, sd);
+      const title = group === 'day' ? relativeDay(t.date, today) : group === 'week' ? `Week of ${formatDate(key)}` : periodLabel(key, sd);
       const g = m.get(key) ?? { title, items: [], inc: 0, exp: 0 };
       g.items.push(t);
       if (!t.isOpening) t.kind === 'income' ? (g.inc += t.amount) : (g.exp += t.amount);
       m.set(key, g);
     }
     return [...m.entries()];
-  }, [list, group, today]);
+  }, [list, group, today, sd]);
 
   const filterCats = data.categories.filter((c) => (kind === 'all' || c.kind === kind) && (!c.archived || catIds.includes(c.id)));
   const activeFilters = (range !== 'all' ? 1 : 0) + catIds.length;

@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   weekStart: 'monday',
   emergencyReserve: 50000,
   recurringRestWeekdays: [],
+  monthStartDay: 1,
   notifications: { bills: true, dailyTarget: true, weeklyRecovery: true, browser: false },
   hideAmounts: false,
   promptSaveOnIncome: true,

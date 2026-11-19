@@ -1,4 +1,5 @@
-import { addDays, addMonths, diffDays, eachDay, endOfMonth, minDate, monthKey, startOfWeek, type ISODate } from './dates';
+import { addDays, addMonths, diffDays, eachDay, minDate, monthKey, startOfWeek, type ISODate } from './dates';
+import { periodKeyOf, periodRange, startDayOf } from './period';
 import { expensesBetween, incomeBetween, savingsBetween, savingsDelta } from './ledger';
 import type { Cents } from './money';
 import { RestCalendar, targetsOn, weeklyHistory } from './savings';
@@ -75,11 +76,12 @@ export function analyze(data: FinanceData, today: ISODate, from: ISODate, to: IS
   const hist = first ? weeklyHistory(data, today, first).filter((w) => w.complete && w.weekEnd >= start && w.weekStart <= end) : [];
   const months: { achieved: boolean }[] = [];
   if (first) {
-    for (let m = monthKey(first); m < monthKey(today); m = addMonths(m, 1)) {
-      const mEnd = endOfMonth(m + '-01');
-      if (mEnd < start || m + '-01' > end) continue;
+    const sd = startDayOf(data.settings);
+    for (let m = periodKeyOf(first, sd); m < periodKeyOf(today, sd); m = addMonths(m, 1)) {
+      const { start: mStart, end: mEnd } = periodRange(m, sd);
+      if (mEnd < start || mStart > end) continue;
       const goal = targetsOn(data.goals, mEnd).monthly;
-      months.push({ achieved: savingsBetween(data.transfers, m + '-01', mEnd) >= goal });
+      months.push({ achieved: savingsBetween(data.transfers, mStart, mEnd) >= goal });
     }
   }
   const net = savingsBetween(data.transfers, start, end);
@@ -118,11 +120,11 @@ export function analyze(data: FinanceData, today: ISODate, from: ISODate, to: IS
 export interface MonthSummary { month: string; income: Cents; expenses: Cents; savings: Cents; net: Cents; goal: Cents }
 export function monthSummaries(data: FinanceData, today: ISODate, count = 6): MonthSummary[] {
   const out: MonthSummary[] = [];
-  const cur = monthKey(today);
+  const sd = startDayOf(data.settings);
+  const cur = periodKeyOf(today, sd);
   for (let i = count - 1; i >= 0; i--) {
     const m = addMonths(cur, -i);
-    const s = m + '-01';
-    const e = endOfMonth(s);
+    const { start: s, end: e } = periodRange(m, sd);
     const income = incomeBetween(data.transactions, s, e);
     const expenses = expensesBetween(data.transactions, s, e);
     out.push({ month: m, income, expenses, savings: savingsBetween(data.transfers, s, e), net: income - expenses, goal: targetsOn(data.goals, minDate(today, e)).monthly });
@@ -153,11 +155,14 @@ const wholeDH = (c: number) => Math.round(c / 100) * 100;
 export function forecast(data: FinanceData, today: ISODate, safeToSpendNow: Cents): Forecast {
   const first = firstActivityDate(data);
   const historyDays = first ? diffDays(today, first) : 0;
-  const mStart = monthKey(today) + '-01';
-  const mEnd = endOfMonth(mStart);
+  const sd = startDayOf(data.settings);
+  const { start: mStart, end: mEnd } = periodRange(periodKeyOf(today, sd), sd);
   const monthGoal = targetsOn(data.goals, today).monthly;
   const monthSaved = savingsBetween(data.transfers, mStart, mEnd);
-  const occ = occurrencesInMonth(data.subscriptions, data.payments, today, monthKey(today)).filter((o) => o.status === 'open' && o.dueDate > today);
+  // Bills due between tomorrow and the end of the financial month (may span two calendar months).
+  const occ = [monthKey(mStart), monthKey(mEnd)].filter((m, i, a) => a.indexOf(m) === i)
+    .flatMap((m) => occurrencesInMonth(data.subscriptions, data.payments, today, m))
+    .filter((o) => o.status === 'open' && o.dueDate > today && o.dueDate <= mEnd);
   const upcomingObligations = occ.reduce((a, o) => a + o.amount, 0);
   const cal = new RestCalendar(data.restDays, data.settings.recurringRestWeekdays);
   const remainingWorkingDays = cal.workingDays(addDays(today, 1), mEnd);

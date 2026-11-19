@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon, Sun, PiggyBank, ChevronRight, CheckCircle2, XCircle, CalendarClock, Info } from 'lucide-react';
 import {
-  eachDay, formatDate, monthName, savingsBetween, weekdayLong, weeklyHistory, RestCalendar, addMonths, monthKey, monthProgress, formatMoney
+  eachDay, formatDate, savingsBetween, weekdayLong, weeklyHistory, RestCalendar, addMonths, monthProgress, formatMoney, periodKeyOf, periodLabel, startDayOf
 } from '../engine';
 import { useFinance } from '../hooks/useFinance';
 import { useActions } from '../features/actions';
@@ -166,12 +166,13 @@ function Weekly() {
 function Monthly() {
   const { data, snap, today } = useFinance();
   const m = snap.month;
-  const past = Array.from({ length: 6 }, (_, i) => addMonths(monthKey(today), -(i + 1))).filter((x) => snap.firstActivity && x >= monthKey(snap.firstActivity)).map((x) => monthProgress(data, today, x));
+  const sd = startDayOf(data.settings);
+  const past = Array.from({ length: 6 }, (_, i) => addMonths(m.month, -(i + 1))).filter((x) => snap.firstActivity && x >= periodKeyOf(snap.firstActivity, sd)).map((x) => monthProgress(data, today, x));
   return (
     <div className="space-y-5">
       <Card className="p-5">
         <div className="flex items-center justify-between">
-          <p className="font-extrabold">{monthName(m.month)}</p>
+          <div><p className="font-extrabold">{periodLabel(m.month, sd)}</p>{sd !== 1 && <p className="text-[12px] text-muted">Your month starts on day {sd}</p>}</div>
           {m.achieved ? <span className="h-7 px-3 rounded-full bg-forest text-cream text-[12px] font-bold grid place-items-center">Achieved</span> : <span className="text-[13px] font-bold text-forest">{Math.round(m.progress * 100)}%</span>}
         </div>
         <div className="mt-4 flex items-end justify-between">
@@ -204,7 +205,7 @@ function Monthly() {
             {past.map((p) => (
               <Link key={p.month} to={`/summary/${p.month}`} className="flex items-center gap-3 px-4 py-3 hover:bg-mint/30">
                 {p.achieved ? <CheckCircle2 className="text-sage" size={20} /> : <XCircle className="text-accent" size={20} />}
-                <div className="flex-1"><p className="text-[14px] font-semibold">{monthName(p.month)}</p><ProgressBar value={p.progress} height={5} className="mt-1.5" /></div>
+                <div className="flex-1"><p className="text-[14px] font-semibold">{periodLabel(p.month, sd)}</p><ProgressBar value={p.progress} height={5} className="mt-1.5" /></div>
                 <div className="text-right"><Money value={p.saved} className="font-bold text-[14px] block" /><span className="text-[11px] text-muted">of <Money value={p.goal} /></span></div>
               </Link>
             ))}

@@ -217,7 +217,7 @@ export default function Home() {
 
       <div className="grid grid-cols-2 gap-3">
         <Link to="/calendar" className="card p-4 flex items-center gap-3 hover:border-forest/40"><CalendarDays className="text-forest" size={20} /><span className="text-[14px] font-bold">Calendar</span></Link>
-        <Link to={`/summary/${today.slice(0, 7)}`} className="card p-4 flex items-center gap-3 hover:border-forest/40"><Receipt className="text-forest" size={20} /><span className="text-[14px] font-bold">Month summary</span></Link>
+        <Link to={`/summary/${snap.month.month}`} className="card p-4 flex items-center gap-3 hover:border-forest/40"><Receipt className="text-forest" size={20} /><span className="text-[14px] font-bold">Month summary</span></Link>
       </div>
     </div>
   );
